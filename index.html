@@ -10,6 +10,10 @@
         margin: 0;
         padding: 20px;
     }
+    a {
+    text-decoration: none;
+    color: inherit;
+}
 
     h1 {
         text-align: center;
@@ -60,6 +64,83 @@
         margin-bottom: 10px;
         border-radius: 5px;
     }
+
+    /* ICON */
+    .icon {
+        background-color: #89b5f0;
+        transition: all .5s;
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        width: 100px;
+        height: 100px;
+        border-radius: 100%;
+        overflow: visible;
+    }
+
+    .icon:hover {
+        box-shadow: 5px 5px 10px 2px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+    }
+
+    /* SLIDER (long oval) */
+    .slider {
+        position: absolute;
+        top: -220px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 220px;
+        background: #dbdbdb;
+        border-radius: 100px;
+
+        transition:
+            top .4s ease,
+            width .4s ease .4s,
+            opacity .3s ease;
+
+        opacity: 0;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding: 20px 0;
+    }
+
+    .icon:hover .slider {
+        top: 110px;
+        opacity: 1;
+        width: 160px;
+    }
+
+    /* MENU ITEMS */
+    .menu-item {
+        width: 120px;
+        padding: 10px;
+        background: white;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+        border: 1px solid #bcbcbc;
+
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity .3s ease, transform .3s ease;
+        transition-delay: .8s;
+    }
+
+    .icon:hover .menu-item {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .menu-item:hover {
+        background: #c7dfff;
+        transform: scale(1.05);
+    }
 </style>
 </head>
 <body>
@@ -73,16 +154,116 @@
     <ul id="messagesList"></ul>
 </div>
 
+<div class="icon">
+    <div class="slider">
+        <a href="https://hxes.github.io/learningwonders/eduventures"><div class="menu-item">Profile</div></a>
+        <a href="https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pru=AAABmjcGSz8*SBdCgpF-BT5VSbJIJenr1Q&tab=t.0#"><div class="menu-item">Settings</div></a>
+        <a href="https://www.engineering.com/games/"><div class="menu-item">About</div></a>
+    </div>
+</div>
+
 <script>
-    // Load saved messages
+    /* -------------------------
+       USERNAME SETUP
+    ------------------------- */
+    let username = localStorage.getItem("username");
+    if (!username) {
+        username = prompt("Enter your name:");
+        if (!username || username.trim() === "") {
+            username = "Anonymous";
+        }
+        localStorage.setItem("username", username);
+    }
+
+    /* -------------------------
+       ADMIN AUTHENTICATION
+    ------------------------- */
+
+    let isOwner = localStorage.getItem("isOwner") === "true";
+
+    // Track currently pressed keys
+    const pressedKeys = new Set();
+
+    document.addEventListener("keydown", (e) => {
+        pressedKeys.add(e.key.toLowerCase());
+
+        const hasShift = e.shiftKey;
+        const hasJ = pressedKeys.has("j");
+        const hasK = pressedKeys.has("k");
+        const hasO = pressedKeys.has("o");
+
+        if (hasShift && hasJ && hasK && hasO) {
+            if (isOwner) {
+                localStorage.removeItem("isOwner");
+                isOwner = false;
+                alert("Admin mode disabled");
+            } else {
+                localStorage.setItem("isOwner", "true");
+                isOwner = true;
+                alert("Admin mode enabled");
+            }
+            renderMessages();
+        }
+    });
+
+    document.addEventListener("keyup", (e) => {
+        pressedKeys.delete(e.key.toLowerCase());
+    });
+
+    // Long press icon for 5 seconds to enable admin mode
+    let pressTimer;
+    const icon = document.querySelector(".icon");
+
+    icon.addEventListener("mousedown", () => {
+        pressTimer = setTimeout(() => {
+            localStorage.setItem("isOwner", "true");
+            isOwner = true;
+            alert("Admin mode enabled");
+            renderMessages();
+        }, 5000);
+    });
+
+    icon.addEventListener("mouseup", () => clearTimeout(pressTimer));
+    icon.addEventListener("mouseleave", () => clearTimeout(pressTimer));
+
+    /* -------------------------
+       MESSAGE SYSTEM
+    ------------------------- */
+
     let messages = JSON.parse(localStorage.getItem("messages")) || [];
 
     function renderMessages() {
         const list = document.getElementById("messagesList");
         list.innerHTML = "";
-        messages.forEach(msg => {
+
+        messages.forEach((msg, index) => {
             const li = document.createElement("li");
-            li.textContent = msg;
+
+            li.innerHTML = `
+                <strong>${msg.name}</strong> — <em>${msg.time}</em><br>
+                ${msg.text}
+            `;
+
+            if (isOwner) {
+                const del = document.createElement("button");
+                del.textContent = "Delete";
+                del.style.marginTop = "5px";
+                del.style.background = "#ff4d4d";
+                del.style.color = "white";
+                del.style.border = "none";
+                del.style.padding = "5px 10px";
+                del.style.borderRadius = "5px";
+                del.style.cursor = "pointer";
+
+                del.onclick = () => {
+                    messages.splice(index, 1);
+                    localStorage.setItem("messages", JSON.stringify(messages));
+                    renderMessages();
+                };
+
+                li.appendChild(del);
+            }
+
             list.appendChild(li);
         });
     }
@@ -92,7 +273,16 @@
         const text = input.value.trim();
         if (text === "") return;
 
-        messages.push(text);
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const messageObj = {
+            name: username,
+            text: text,
+            time: timeString
+        };
+
+        messages.push(messageObj);
         localStorage.setItem("messages", JSON.stringify(messages));
 
         input.value = "";
