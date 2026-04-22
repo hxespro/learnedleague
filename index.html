@@ -290,6 +290,21 @@
     }
 
     renderMessages();
+    function renameUser() {
+    let newName = prompt("Enter a new name:");
+
+    if (!newName || newName.trim() === "") {
+        alert("Name cannot be empty");
+        return;
+    }
+
+    username = newName.trim();
+    localStorage.setItem("username", username);
+
+    alert("Your name has been updated to: " + username);
+    renderMessages();
+}
+
 </script>
 
 </body>
