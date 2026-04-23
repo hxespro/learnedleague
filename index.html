@@ -178,6 +178,19 @@
         localStorage.setItem("username", username);
     }
 
+    /* Allow user to rename themselves */
+    function renameUser() {
+        let newName = prompt("Enter a new name:");
+        if (!newName || newName.trim() === "") {
+            alert("Name cannot be empty");
+            return;
+        }
+        username = newName.trim();
+        localStorage.setItem("username", username);
+        alert("Your name has been updated to: " + username);
+        renderMessages();
+    }
+
     /* -------------------------
        ADMIN AUTHENTICATION
     ------------------------- */
@@ -190,11 +203,12 @@
     document.addEventListener("keydown", (e) => {
         pressedKeys.add(e.key.toLowerCase());
 
-        const hasShift = e.shiftKey;
+        const hasShift = pressedKeys.has("shift");
         const hasJ = pressedKeys.has("j");
         const hasK = pressedKeys.has("k");
         const hasO = pressedKeys.has("o");
 
+        // Toggle admin mode ONLY when all 4 keys are held
         if (hasShift && hasJ && hasK && hasO) {
             if (isOwner) {
                 localStorage.removeItem("isOwner");
@@ -247,6 +261,7 @@
                 ${msg.text}
             `;
 
+            // Delete button only for owner
             if (isOwner) {
                 const del = document.createElement("button");
                 del.textContent = "Delete";
@@ -293,22 +308,8 @@
     }
 
     renderMessages();
-    function renameUser() {
-    let newName = prompt("Enter a new name:");
-
-    if (!newName || newName.trim() === "") {
-        alert("Name cannot be empty");
-        return;
-    }
-
-    username = newName.trim();
-    localStorage.setItem("username", username);
-
-    alert("Your name has been updated to: " + username);
-    renderMessages();
-}
-
 </script>
+
 
 </body>
 </html>
